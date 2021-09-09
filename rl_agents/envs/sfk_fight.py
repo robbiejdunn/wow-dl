@@ -38,29 +38,44 @@ class SFKFightEnv(gym.Env):
         # previous pixel colour (used for reward calc)
         self.prev_pixel = 1
         self.prev_mana_pixel = 1
-        self.action_space = spaces.Discrete(4)
+        self.action_space = spaces.Discrete(5)
         self.observation_space = spaces.Box(low=0, high=255, shape=(50, 100, 3), dtype=np.uint8)
         self.start_time = None
         self.last_action_time = 1
+        self.recent_err_action = False
     
     def _take_action(self, action):
+        self.recent_err_action = False
         if action == 0:
             key = '3'
             sleep = 1.5
+            cost = 193
         elif action == 1:
             key = '4'
             sleep = 1.5
+            cost = 215
         elif action == 2:
             key = '5'
             sleep = 1.5
+            cost = 256
         elif action == 3:
             key = '6'
             sleep = 2.5
+            cost = 463
+        elif action == 4:
+            self.last_action_time = 0.5
+            time.sleep(0.5)
+            return
         # print(f"Action = {key}")
-        self.last_action_time = sleep
-        cmd = f"{WINDOW_FOCUS_COMMAND} xdotool key '{key}'"
-        subprocess.run(cmd, shell=True)
-        time.sleep(sleep + 0.1)
+        if (1 - self.recent_screen["mana"].value) * 6000 < (cost + 50):
+            self.recent_err_action = True
+            self.last_action_time = 0.5
+            time.sleep(0.5)
+        else:
+            self.last_action_time = sleep
+            cmd = f"{WINDOW_FOCUS_COMMAND} xdotool key '{key}'"
+            subprocess.run(cmd, shell=True)
+            time.sleep(sleep + 0.1)
 
     def _next_observation(self):
         observation, self.recent_screen = get_state()
@@ -79,7 +94,15 @@ class SFKFightEnv(gym.Env):
         
         # healing per mana per second
         # hpmps = (health_pct_diff / mana_pct_diff) / self.last_action_time
-        reward = time.time() - self.start_time
+        if self.start_time:
+            if self.recent_err_action:
+                reward = (time.time() - self.start_time) - 100
+                # print(f"Giving bad reward to error action {reward}")
+            else:
+                reward = time.time() - self.start_time
+        else:
+            print("No start time set? Bug?")
+            reward = 0
         # print(f"H%diff = {health_pct_diff} M%diff = {mana_pct_diff}")
         # print(f"HPerManaPerSecond = {reward}")
         # time_elapsed = time.time() - self.start_time
@@ -90,7 +113,8 @@ class SFKFightEnv(gym.Env):
         # self.prev_mana_pixel = curr_mana_pixel
         # print ("curr", curr_pixel, "pix", pix_loaded[1, 1], "rgb", r, g, b)
         # done = curr_pixel == 255
-        done = False
+        # print(self.recent_screen["health"].value)
+        done = self.recent_screen["health"].value == 1
         if done:
             reward = -1000
         # print(f"Action reward = {reward}")
@@ -105,15 +129,17 @@ class SFKFightEnv(gym.Env):
         return obs, reward, done, {}
 
     def reset(self):
+        duration = None
         if self.start_time:
-            print(f"Episode took {time.time() - self.start_time} seconds")
-        print("Resetting in 5 sec")
+            duration = time.time() - self.start_time
+            print(f"Episode took {duration} seconds")
+        print("Resetting in 5 sec...")
         time.sleep(5)
         for c in RESET_CMD:
             subprocess.call(c, shell=True)
         time.sleep(8)
         self.start_time = time.time()
-        return self._next_observation()
+        return self._next_observation(), duration
     
     def close(self):
         subprocess.run(EXIT_CMD, shell=True)

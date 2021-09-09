@@ -6,6 +6,7 @@ import gym
 
 from rl_agents.envs import MoltenDropEnv, SFKFightEnv
 import os
+import pandas as pd
 
 import math
 import random
@@ -34,7 +35,7 @@ EPS_DECAY = 600
 TARGET_UPDATE = 10
 
 steps_done = 0
-n_actions = 4
+n_actions = 5
 n_random = 0
 n_nn = 0
 
@@ -48,6 +49,8 @@ target_net.eval()
 optimizer = optim.RMSprop(policy_net.parameters())
 memory = ReplayMemory(100)
 
+results_df = pd.DataFrame()
+
 
 def visTensor(tensor, ch=0, allkernels=False, nrow=8, padding=1): 
     n,c,w,h = tensor.shape
@@ -60,40 +63,25 @@ def visTensor(tensor, ch=0, allkernels=False, nrow=8, padding=1):
     plt.imshow(grid.numpy().transpose((1, 2, 0)))
 
 
-def visualise_filters():
-    # filter = policy_net.conv1.weight.detach().clone()
-    filter = policy_net.conv1.weight.data.clone()
-    # filter = policy_net.features[1].weight.data.clone()
-    visTensor(filter, ch=3, allkernels=False)
-    plt.show()
-    exit()
-
-    kernels = policy_net.conv1.weight.detach().clone()
-    print(f"{kernels.size()} kernels found")
-    kernels = kernels - kernels.min()
-    kernels = kernels / kernels.max()
-    filter_img = torchvision.utils.make_grid(kernels, nrow = 12)
-    plt.imshow(filter_img.permute(1, 2, 0))
-
-
 def select_action(state):
     global steps_done, n_nn, n_random
     sample = random.random()
     eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY)
     steps_done += 1
-    return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long)
-    # if sample > eps_threshold:
-    #     with torch.no_grad():
-    #         n_nn += 1
-    #         return policy_net(state).max(1)[1].view(1, 1)
-    # else:
-    #     n_random += 1
-    #     return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long)
+    # return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long)
+    if sample > eps_threshold:
+        with torch.no_grad():
+            n_nn += 1
+            return policy_net(state).max(1)[1].view(1, 1), "policy"
+    else:
+        n_random += 1
+        return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long), "random"
 
 
 def optimize_model():
     if len(memory) < BATCH_SIZE:
         return
+    # print("Optimizing model")
     transitions = memory.sample(BATCH_SIZE)
     batch = Transition(*zip(*transitions))
     non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=device, dtype=torch.bool)
@@ -116,21 +104,37 @@ def optimize_model():
 
 
 def main():
-    # env = MoltenDropEnv()
+    global results_df
     env = SFKFightEnv()
-    
-    # visualise_filters()
-    # exit()
-
     num_episodes = 1500
     num_steps = 1000
+    env.reset()
     for i_episode in range(num_episodes):
         print(f"Episode {i_episode} starting")
-        last_screen = env.reset()
+        epi_actions = {
+            "Abolish Disease": 0,
+            "Flash Heal": 0,
+            "Divine Spirit": 0,
+            "Greater Heal": 0,
+            "Pass": 0,
+        }
+        last_screen, _ = get_state()
         current_screen, _ = get_state()
         state = current_screen - last_screen
         for t in range(num_steps):
-            action = select_action(state)
+            action, choice = select_action(state)
+            if choice == "policy":
+                if action.item() == 0:
+                    epi_actions["Abolish Disease"] += 1
+                elif action.item() == 1:
+                    epi_actions["Flash Heal"] += 1
+                elif action.item() == 2:
+                    epi_actions["Divine Spirit"] += 1
+                elif action.item() == 3:
+                    epi_actions["Greater Heal"] += 1
+                elif action.item() == 4:
+                    epi_actions["Pass"] += 1
+            
             obs, reward, done, info = env.step(action.item())
             # print(f"Action = {action.item()} Reward = {reward}")
             reward = torch.tensor([reward], device=device)
@@ -144,18 +148,37 @@ def main():
 
             state = next_state
 
-            # optimize_model()
+            optimize_model()
 
             if done:
                 global n_random, n_nn
                 print(f"Episiode complete after {t} steps. {n_random/(n_random + n_nn)}% random actions")
+                print(epi_actions)
+                _, episode_duration = env.reset()
+                if episode_duration is not None:
+                    results_df = results_df.append(
+                        {
+                            "Episode": i_episode,
+                            "Duration (s)": episode_duration, 
+                            "Random actions": n_random,
+                            "Policy actions": n_nn,
+                            "Random %": n_random / (n_random + n_nn),
+                            "Abolish disease casts": epi_actions["Abolish Disease"],
+                            "Flash heal casts": epi_actions["Flash Heal"],
+                            "Divine spirit casts": epi_actions["Divine Spirit"],
+                            "Greater heal casts": epi_actions["Greater Heal"],
+                            "Passes": epi_actions["Pass"],
+                        }, 
+                        ignore_index=True
+                    )
+                    results_df.to_csv("results.csv")
                 n_random = 0
                 n_nn = 0
                 for filename in os.listdir('data'):
                     filepath = os.path.join('data', filename)
                     os.remove(filepath)
                 # pickle model
-                torch.save(policy_net.state_dict(), "test_pickle")
+                # torch.save(policy_net.state_dict(), "test_pickle")
                 break
             
             # Sleep for GCD?

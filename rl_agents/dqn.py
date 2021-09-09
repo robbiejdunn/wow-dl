@@ -8,10 +8,10 @@ class DQN(nn.Module):
 
     def __init__(self, h, w, outputs):
         super(DQN, self).__init__()
-        self.conv1 = nn.Conv2d(3, 50, 10, stride=5)
+        self.conv1 = nn.Conv2d(1, 2, 50, stride=50)
 
         # self.conv1 = nn.Conv2d(16, 33, 3, stride=2)
-        self.bn1 = nn.BatchNorm2d(50)
+        self.bn1 = nn.BatchNorm2d(2)
         # self.conv2 = nn.Conv2d(16, 32, kernel_size=5, stride=2)
         # self.bn2 = nn.BatchNorm2d(32)
         # self.conv3 = nn.Conv2d(32, 32, kernel_size=5, stride=2)
@@ -19,7 +19,7 @@ class DQN(nn.Module):
 
         # Number of Linear input connections depends on output of conv2d layers
         # and therefore the input image size, so compute it.
-        def conv2d_size_out(size, kernel_size = 50, stride = 49):
+        def conv2d_size_out(size, kernel_size=50, stride=50):
             return (size - (kernel_size - 1) - 1) // stride  + 1
         # convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
         convw = conv2d_size_out(w)

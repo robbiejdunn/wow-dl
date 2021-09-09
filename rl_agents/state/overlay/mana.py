@@ -14,4 +14,4 @@ class OverlayMana:
     def __init__(self, overlay_image: np.ndarray):
         self.pixels = self.bound.extract_from_image(overlay_image)
         self.value = self.pixels[(0, 0)]
-        print(self.value)
+        # print(self.value)
