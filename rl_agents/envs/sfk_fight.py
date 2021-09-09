@@ -5,7 +5,8 @@ import time
 from gym import spaces
 import numpy as np
 
-from rl_agents.utils import WINDOW_FOCUS_COMMAND, get_screen
+from rl_agents.utils import WINDOW_FOCUS_COMMAND
+from rl_agents.state.state import get_state
 
 
 RESET_CMD = [
@@ -36,9 +37,11 @@ class SFKFightEnv(gym.Env):
         self.step_num = 0
         # previous pixel colour (used for reward calc)
         self.prev_pixel = 1
+        self.prev_mana_pixel = 1
         self.action_space = spaces.Discrete(4)
-        self.observation_space = spaces.Box(low=0, high=255, shape=(60, 60, 3), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0, high=255, shape=(50, 100, 3), dtype=np.uint8)
         self.start_time = None
+        self.last_action_time = 1
     
     def _take_action(self, action):
         if action == 0:
@@ -54,28 +57,42 @@ class SFKFightEnv(gym.Env):
             key = '6'
             sleep = 2.5
         # print(f"Action = {key}")
+        self.last_action_time = sleep
         cmd = f"{WINDOW_FOCUS_COMMAND} xdotool key '{key}'"
         subprocess.run(cmd, shell=True)
-        time.sleep(sleep)
+        time.sleep(sleep + 0.1)
 
     def _next_observation(self):
-        observation, self.recent_screen = get_screen()
+        observation, self.recent_screen = get_state()
+        # self.recent_screen.save(f"aioverlay_{self.step_num}.png")
         return observation
     
     def _get_reward(self):
         if self.recent_screen is None:
             return 0
         # self.recent_screen.save(f"file_test{self.step_num}.png")
-        curr_pixel = self.recent_screen.getpixel((0, 0))[0]
-        health_pct_diff = (self.prev_pixel - curr_pixel) / 255
 
-        time_elapsed = time.time() - self.start_time
-        reward = (0.01 * time_elapsed) + (10 * health_pct_diff)
+        # curr_pixel = self.recent_screen.getpixel((0, 0))[0]
+        # health_pct_diff = (self.prev_pixel - curr_pixel) / 255
+        # curr_mana_pixel = self.recent_screen.getpixel((50, 0))[0]
+        # mana_pct_diff = (self.prev_mana_pixel - curr_mana_pixel) / 255
+        
+        # healing per mana per second
+        # hpmps = (health_pct_diff / mana_pct_diff) / self.last_action_time
+        reward = time.time() - self.start_time
+        # print(f"H%diff = {health_pct_diff} M%diff = {mana_pct_diff}")
+        # print(f"HPerManaPerSecond = {reward}")
+        # time_elapsed = time.time() - self.start_time
+        # reward = (0.01 * time_elapsed) + (10 * health_pct_diff)
         # reward = (0.1 * self.step_num) + (3 * health_pct_diff)
 
-        self.prev_pixel = curr_pixel
+        # self.prev_pixel = curr_pixel
+        # self.prev_mana_pixel = curr_mana_pixel
         # print ("curr", curr_pixel, "pix", pix_loaded[1, 1], "rgb", r, g, b)
-        done = curr_pixel == 255
+        # done = curr_pixel == 255
+        done = False
+        if done:
+            reward = -1000
         # print(f"Action reward = {reward}")
         return reward, done
 

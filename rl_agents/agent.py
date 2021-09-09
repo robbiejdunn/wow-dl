@@ -13,6 +13,7 @@ import subprocess
 import time
 import torch
 import uuid
+import torchvision
 from PIL import Image
 from skimage import io
 from rl_agents.dqn import DQN
@@ -23,7 +24,7 @@ import torch.optim as optim
 import torchvision.transforms as T
 
 from rl_agents.replay_memory import ReplayMemory, Transition
-from rl_agents.utils import get_screen
+from rl_agents.state.state import get_state
 
 BATCH_SIZE = 20
 GAMMA = 0.999
@@ -39,8 +40,8 @@ n_nn = 0
 
 device = torch.device("cpu")
 
-policy_net = DQN(60, 60, n_actions).to(device)
-target_net = DQN(60, 60, n_actions).to(device)
+policy_net = DQN(50, 100, n_actions).to(device)
+target_net = DQN(50, 100, n_actions).to(device)
 target_net.load_state_dict(policy_net.state_dict())
 target_net.eval()
 
@@ -48,18 +49,46 @@ optimizer = optim.RMSprop(policy_net.parameters())
 memory = ReplayMemory(100)
 
 
+def visTensor(tensor, ch=0, allkernels=False, nrow=8, padding=1): 
+    n,c,w,h = tensor.shape
+    if allkernels: tensor = tensor.view(n*c, -1, w, h)
+    elif c != 3: tensor = tensor[:,ch,:,:].unsqueeze(dim=1)
+
+    rows = np.min((tensor.shape[0] // nrow + 1, 64))    
+    grid = torchvision.utils.make_grid(tensor, nrow=nrow, normalize=True, padding=padding)
+    plt.figure( figsize=(nrow,rows) )
+    plt.imshow(grid.numpy().transpose((1, 2, 0)))
+
+
+def visualise_filters():
+    # filter = policy_net.conv1.weight.detach().clone()
+    filter = policy_net.conv1.weight.data.clone()
+    # filter = policy_net.features[1].weight.data.clone()
+    visTensor(filter, ch=3, allkernels=False)
+    plt.show()
+    exit()
+
+    kernels = policy_net.conv1.weight.detach().clone()
+    print(f"{kernels.size()} kernels found")
+    kernels = kernels - kernels.min()
+    kernels = kernels / kernels.max()
+    filter_img = torchvision.utils.make_grid(kernels, nrow = 12)
+    plt.imshow(filter_img.permute(1, 2, 0))
+
+
 def select_action(state):
     global steps_done, n_nn, n_random
     sample = random.random()
     eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY)
     steps_done += 1
-    if sample > eps_threshold:
-        with torch.no_grad():
-            n_nn += 1
-            return policy_net(state).max(1)[1].view(1, 1)
-    else:
-        n_random += 1
-        return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long)
+    return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long)
+    # if sample > eps_threshold:
+    #     with torch.no_grad():
+    #         n_nn += 1
+    #         return policy_net(state).max(1)[1].view(1, 1)
+    # else:
+    #     n_random += 1
+    #     return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long)
 
 
 def optimize_model():
@@ -89,13 +118,16 @@ def optimize_model():
 def main():
     # env = MoltenDropEnv()
     env = SFKFightEnv()
+    
+    # visualise_filters()
+    # exit()
 
     num_episodes = 1500
     num_steps = 1000
     for i_episode in range(num_episodes):
         print(f"Episode {i_episode} starting")
         last_screen = env.reset()
-        current_screen, _ = get_screen()
+        current_screen, _ = get_state()
         state = current_screen - last_screen
         for t in range(num_steps):
             action = select_action(state)
@@ -112,7 +144,7 @@ def main():
 
             state = next_state
 
-            optimize_model()
+            # optimize_model()
 
             if done:
                 global n_random, n_nn
@@ -122,6 +154,8 @@ def main():
                 for filename in os.listdir('data'):
                     filepath = os.path.join('data', filename)
                     os.remove(filepath)
+                # pickle model
+                torch.save(policy_net.state_dict(), "test_pickle")
                 break
             
             # Sleep for GCD?
