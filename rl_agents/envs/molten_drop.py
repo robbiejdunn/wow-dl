@@ -53,6 +53,7 @@ class MoltenDropEnv(gym.Env):
         return reward, done
 
     def step(self, action):
+        print(f"Action = {action}")
         self.step_num += 1
         reward, done = self._get_reward()
         self._take_action(action)

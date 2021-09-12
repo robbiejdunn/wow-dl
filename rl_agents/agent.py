@@ -27,11 +27,11 @@ import torchvision.transforms as T
 from rl_agents.replay_memory import ReplayMemory, Transition
 from rl_agents.state.state import get_state
 
-BATCH_SIZE = 20
+BATCH_SIZE = 200
 GAMMA = 0.999
 EPS_START = 0.9
 EPS_END = 0.05
-EPS_DECAY = 600
+EPS_DECAY = 5000
 TARGET_UPDATE = 10
 
 steps_done = 0
@@ -41,13 +41,15 @@ n_nn = 0
 
 device = torch.device("cpu")
 
-policy_net = DQN(50, 100, n_actions).to(device)
-target_net = DQN(50, 100, n_actions).to(device)
+policy_net = DQN(100, 100, n_actions).to(device)
+print(policy_net)
+# exit()
+target_net = DQN(100, 100, n_actions).to(device)
 target_net.load_state_dict(policy_net.state_dict())
 target_net.eval()
 
 optimizer = optim.RMSprop(policy_net.parameters())
-memory = ReplayMemory(100)
+memory = ReplayMemory(10000)
 
 results_df = pd.DataFrame()
 
@@ -105,9 +107,12 @@ def optimize_model():
 
 def main():
     global results_df
+    tmp_state = None
+    tmp_action = None
+    tmp_nextstate = None
     env = SFKFightEnv()
     num_episodes = 1500
-    num_steps = 1000
+    num_steps = 500
     env.reset()
     for i_episode in range(num_episodes):
         print(f"Episode {i_episode} starting")
@@ -119,6 +124,9 @@ def main():
             "Pass": 0,
         }
         last_screen, _ = get_state()
+        # print(last_screen)
+        # print(last_screen.shape)
+        # exit()
         current_screen, _ = get_state()
         state = current_screen - last_screen
         for t in range(num_steps):
@@ -144,7 +152,15 @@ def main():
             current_screen = obs
             next_state = current_screen - last_screen
 
+            # if tmp_state is not None and tmp_action is not None and tmp_next_state is not None:
+            #     memory.push(tmp_state, tmp_action, tmp_next_state, reward)
+            #     print(f"Pushing to memory with action {tmp_action} reward {reward}")
             memory.push(state, action, next_state, reward)
+            # print(f"Pushing to memory with action {action} reward {reward}")
+
+            tmp_state = state
+            tmp_action = action
+            tmp_next_state = next_state
 
             state = next_state
 

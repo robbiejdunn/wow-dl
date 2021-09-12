@@ -10,6 +10,7 @@ from rl_agents.state.overlay import OverlayHealth, OverlayMana
 
 
 comp = T.Compose([T.ToPILImage(), T.ToTensor()])
+totensor = T.Compose([T.ToTensor()])
 
 
 def read_image(path: str) -> np.ndarray:
@@ -41,16 +42,24 @@ def cut_overlay(image: np.ndarray) -> np.ndarray:
     NOTE: this should be changed to either read overlay H/W from a 
     shared location or calculate based on overlay items.
     """
-    return image[:50, :100]
+    return image[:100, :100]
 
 
 def get_state():
+    # print("NEW IMAGE STATE..")
     image_path = take_screenshot()
     screen = read_image(image_path)
     screen = cut_overlay(screen)
     overlay_info = parse_overlay(screen)
+    # print(screen.shape)
+    # exit()
+    # screen = screen.transpose((2, 0, 1))
     screen = np.ascontiguousarray(screen, dtype=np.float32)
-    screen = torch.from_numpy(screen)
-    screen = comp(screen)
+    # screen = torch.from_numpy(screen)
+    # screen = comp(screen)
+    # print(screen.shape)
+    screen = totensor(screen)
+    # print(screen.shape)
     screen = screen.unsqueeze(0)
+    # print(screen.shape)
     return screen, overlay_info
