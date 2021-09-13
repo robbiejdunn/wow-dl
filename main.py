@@ -154,6 +154,7 @@ def compute_avg_return(environment, policy, num_episodes=10):
 # https://github.com/tensorflow/agents/tree/master/tf_agents/metrics
 
 print(compute_avg_return(eval_env, random_policy, num_eval_episodes))
+exit()
 
 replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
     data_spec=agent.collect_data_spec,
