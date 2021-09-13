@@ -10,6 +10,7 @@ setup(
         'tensorflow >= 2.6.0',
         'pillow >= 8.3.2',
         'matplotlib >= 3.4.2',
+        'scikit-image >= 0.18.3',
     ],
     dev_requires=[
         'pytest >= 6.2.5',
