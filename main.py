@@ -229,4 +229,18 @@ plt.ylabel('Average Return')
 plt.xlabel('Iterations')
 plt.ylim(top=250)
 
-plt.savefig("results.png")
+plt.savefig("out/results.png")
+
+
+def create_policy_eval_video(policy, filename, num_episodes=5, fps=30):
+  filename = filename + ".mp4"
+  with imageio.get_writer(filename, fps=fps) as video:
+    for _ in range(num_episodes):
+      time_step = eval_env.reset()
+      video.append_data(eval_py_env.render())
+      while not time_step.is_last():
+        action_step = policy.action(time_step)
+        time_step = eval_env.step(action_step.action)
+        video.append_data(eval_py_env.render())
+
+create_policy_eval_video(agent.policy, "out/trained-agent")
