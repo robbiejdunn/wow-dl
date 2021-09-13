@@ -8,9 +8,9 @@ import skimage.io
 import torchvision.transforms as T
 
 
-get_window_id = subprocess.Popen(["xdotool search --name 'World of Warcraft'"], shell=True, stdout=subprocess.PIPE)
-window_id = int(get_window_id.communicate()[0])
-WINDOW_FOCUS_COMMAND = f"xdotool windowactivate {window_id} && sleep 0.1 &&"
+# get_window_id = subprocess.Popen(["xdotool search --name 'World of Warcraft'"], shell=True, stdout=subprocess.PIPE)
+# window_id = int(get_window_id.communicate()[0])
+# WINDOW_FOCUS_COMMAND = f"xdotool windowactivate {window_id} && sleep 0.1 &&"
 # print(WINDOW_FOCUS_COMMAND)
 # exit()
 
