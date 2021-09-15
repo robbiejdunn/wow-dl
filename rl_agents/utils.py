@@ -19,6 +19,7 @@ def get_window_focus_command():
     window_focus_command = f"xdotool windowactivate {window_id}"
     return window_focus_command
 
+
 def read_image(path: str) -> np.ndarray:
     """ Reads an image into a numpy tensor """
     return skimage.io.imread(path, as_gray=True)

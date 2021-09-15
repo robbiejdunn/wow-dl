@@ -1,18 +1,10 @@
 import argparse
 
-# from rl_agents.agent import main
-from rl_agents.train_new import TrainingManager
+from rl_agents.train import TrainingManager
 
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser(description="DL Agents in WoW 1.12")
-#     parser.add_argument("--checkpoint", help="Checkpoint to start training from")
-#     args = parser.parse_args()
-#     print(args.checkpoint)
-#     main()
 
 if __name__ == "__main__":
     t = TrainingManager(
-        # env_name='CartPole-v0',
         env_name='WoW', 
         channels=1,
         num_iterations=5000,
@@ -27,5 +19,3 @@ if __name__ == "__main__":
         episode_max_steps=1000,
     )
     t.train()
-    # t.train()
-    # train('CartPole-v0')
