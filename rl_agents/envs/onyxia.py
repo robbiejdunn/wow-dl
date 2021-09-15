@@ -67,7 +67,7 @@ class OnyxiaEnv(py_environment.PyEnvironment):
         run_command_shell("xdotool key Return && sleep 0.2 && xdotool type '/run ClearTarget()' && sleep 0.2 && xdotool key Return", 3.0)
         run_command_shell("xdotool key Return && sleep 0.2 && xdotool type '/g .modify mana 6000' && sleep 0.2 && xdotool key Return", 3.0)
         # Revive, repair & tele tank
-        run_command_shell("xdotool key Return && sleep 0.2 && xdotool type '/tar Tank' && sleep 0.2 && xdotool key Return", 2.0)
+        run_command_shell("xdotool key Return && sleep 0.2 && xdotool type '/tar Tank' && sleep 0.2 && xdotool key Return", 3.0)
         run_command_shell("xdotool key Return && sleep 0.2 && xdotool type '/g .revive' && sleep 0.2 && xdotool key Return", 2.0)
         run_command_shell("xdotool key Return && sleep 0.2 && xdotool type '/g .repair' && sleep 0.2 && xdotool key Return", 2.0)
         run_command_shell("xdotool key Return && sleep 0.2 && xdotool type '/g .tele name OnyTankSpot' && sleep 0.2 && xdotool key Return", 2.0)
@@ -121,7 +121,7 @@ class OnyxiaEnv(py_environment.PyEnvironment):
             return self.reset()
         
         # If health of target is 0 then end episode
-        if self._state[0] <= 5:
+        if self._state[0] == 0:
             self._episode_ended = True
         else:
             self._state = self._take_action(action)

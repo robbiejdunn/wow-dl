@@ -24,3 +24,5 @@ RUN python3.8 -m venv venv && \
     python3.8 -m pip install wheel && \
     python3.8 -m pip install --upgrade pip && \
     python3.8 -m pip install -e .
+
+COPY docker/Config.wtf /root/client/WTF/

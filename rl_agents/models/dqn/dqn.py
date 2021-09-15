@@ -29,6 +29,19 @@ class SimpleDQN:
         q_net = sequential.Sequential(dense_layers + [q_values_layer])
         optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
         train_step_counter = tf.Variable(0)
+
+        # define epsilon greedy decay (https://github.com/tensorflow/agents/issues/339 https://www.tensorflow.org/api_docs/python/tf/compat/v1/train/exponential_decay)
+        start_epsilon = 0.9
+        n_of_steps = 20000
+        end_epsilon = 0.1
+        epsilon = tf.compat.v1.train.polynomial_decay(
+            start_epsilon,
+            train_step_counter,
+            n_of_steps,
+            end_learning_rate=end_epsilon
+        )
+        
+
         self.agent = dqn_agent.DqnAgent(
             train_env.time_step_spec(),
             train_env.action_spec(),
@@ -36,6 +49,7 @@ class SimpleDQN:
             optimizer=optimizer,
             td_errors_loss_fn=common.element_wise_squared_loss,
             train_step_counter=train_step_counter,
+            epsilon_greedy=epsilon,
         )
         self.agent.initialize()
         self.replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
