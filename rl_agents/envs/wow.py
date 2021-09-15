@@ -1,3 +1,4 @@
+import os
 import subprocess
 import time
 from tf_agents.environments import py_environment, utils
@@ -19,7 +20,7 @@ class SFKEnv(py_environment.PyEnvironment):
         )
         self._state = [100, 100]
         self._episode_ended = False
-        self._episode_start_time = time.time()
+        self._action_start_time = time.time()
         self._window_focus = get_window_focus_command()
 
     def action_spec(self):
@@ -30,7 +31,7 @@ class SFKEnv(py_environment.PyEnvironment):
 
     def _reset(self):
         wf = self._window_focus
-        print(f"WF command = \"{wf}\"")
+        # print(f"WF command = \"{wf}\"")
         reset_commands = [
             f"{wf} xdotool mousemove 300 300 click 3",
             f"{wf} xdotool key Return && xdotool type '/run ClearTarget()' && xdotool key Return",
@@ -53,9 +54,11 @@ class SFKEnv(py_environment.PyEnvironment):
         for c in reset_commands:
             subprocess.call(c, shell=True)
         time.sleep(8)
+        for filename in os.listdir('data'):
+            filepath = os.path.join('data', filename)
+            os.remove(filepath)
         self._state = self._get_state()
         self._episode_ended = False
-        self._episode_start_time = time.time()
         return ts.restart(np.array(self._state, dtype=np.int32))
     
     def _get_state(self):
@@ -63,6 +66,7 @@ class SFKEnv(py_environment.PyEnvironment):
         return [game_state['health'].get_health(), game_state['mana'].get_mana()]
     
     def _take_action(self, action):
+        self._action_start_time = time.time()
         key = None
         if action == 0:
             key = '3'
@@ -88,6 +92,7 @@ class SFKEnv(py_environment.PyEnvironment):
         return game_state
 
     def _step(self, action):
+        # print(f"Stepped with action {action}")
         if self._episode_ended:
             # The last action ended the episode. Ignore the current action and start
             # a new episode.
@@ -99,7 +104,7 @@ class SFKEnv(py_environment.PyEnvironment):
         else:
             self._state = self._take_action(action)
         
-        reward = time.time() - self._episode_start_time
+        reward = time.time() - self._action_start_time
         if self._episode_ended or self._state[0] == 0:
             return ts.termination(
                 np.array(self._state, dtype=np.int32),
