@@ -1,3 +1,4 @@
+import math
 import numpy as np
 
 from rl_agents.state.utils import OverlayItemBoundary
@@ -15,3 +16,6 @@ class OverlayMana:
         self.pixels = self.bound.extract_from_image(overlay_image)
         self.value = self.pixels[(0, 0)]
         # print(self.value)
+    
+    def get_mana(self):
+        return math.ceil(100 * (1 - self.value))

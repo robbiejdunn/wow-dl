@@ -5,13 +5,12 @@ setup(
     version='0.0.1',
     packages=['rl_agents'],
     install_requires=[
-        'gym >= 0.19.0',
-        'matplotlib >= 3.4.3',
-        'numpy >= 1.21.2',
+        'pyvirtualdisplay>=2.2',
+        'tf_agents >= 0.9.0',
+        'tensorflow >= 2.6.0',
+        'pillow >= 8.3.2',
+        'matplotlib >= 3.4.2',
         'scikit-image >= 0.18.3',
-        'torch >= 1.9.0',
-        'torchvision >= 0.10.0',
-        'uuid >= 1.30'
     ],
     dev_requires=[
         'pytest >= 6.2.5',
