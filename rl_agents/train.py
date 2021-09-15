@@ -63,7 +63,7 @@ class TrainingManager:
         random_policy = random_tf_policy.RandomTFPolicy(self.train_env.time_step_spec(), self.train_env.action_spec())
         self.train_env.reset()
         print("Collecting initial steps")
-        self.collect_data(initial_collect_steps)
+        self.collect_data(initial_collect_steps, random_policy)
         # Dataset generates trajectories with shape [Bx2x...]
         dataset = self.dqn.replay_buffer.as_dataset(
             num_parallel_calls=3, 
@@ -74,19 +74,19 @@ class TrainingManager:
         self.iterator = iter(dataset)
         # print(f"Baseline: {self.compute_avg_return(random_policy)}")
     
-    def collect_step(self):
+    def collect_step(self, policy):
         time_step = self.train_env.current_time_step()
-        action_step = self.dqn.agent.policy.action(time_step)
+        action_step = policy.action(time_step)
         next_time_step = self.train_env.step(action_step.action)
         traj = trajectory.from_transition(time_step, action_step, next_time_step)
          # Add trajectory to the replay buffer
         self.dqn.replay_buffer.add_batch(traj)
         return next_time_step.is_last()
 
-    def collect_data(self, steps: int) -> bool:
+    def collect_data(self, steps: int, policy) -> bool:
         is_last = False
         for _ in range(steps):
-            is_last = self.collect_step()
+            is_last = self.collect_step(policy)
             if is_last:
                 break
         return is_last
@@ -123,7 +123,7 @@ class TrainingManager:
             self.train_env.reset()
             for _ in range(self.episode_max_steps):
                 # Collect step using collect_policy and save to the replay buffer.
-                is_last = self.collect_data(self.collect_steps_per_iteration)
+                is_last = self.collect_data(self.collect_steps_per_iteration, self.dqn.agent.collect_policy)
                 # Sample a batch of data from the buffer and update the agent's network.
                 experience, unused_info = next(self.iterator)
                 train_loss = self.dqn.agent.train(experience).loss
