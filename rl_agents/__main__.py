@@ -6,6 +6,7 @@ from rl_agents.train import TrainingManager
 if __name__ == "__main__":
     t = TrainingManager(
         env_name='WoW', 
+        # env_name='CartPole-v0',
         channels=1,
         num_iterations=5000,
         collect_steps_per_iteration=1,
