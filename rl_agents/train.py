@@ -72,7 +72,6 @@ class TrainingManager:
         ).prefetch(3)
 
         self.iterator = iter(dataset)
-        # print(f"Baseline: {self.compute_avg_return(random_policy)}")
     
     def collect_step(self, policy):
         time_step = self.train_env.current_time_step()
@@ -116,7 +115,6 @@ class TrainingManager:
         # Evaluate the agent's policy once before training.
         avg_return = self.compute_avg_return(self.dqn.agent.policy)
         returns = [avg_return]
-
         print("Training agent")
         for epi_i in range(self.num_iterations):
             print(f"Resetting for episode {epi_i}")
