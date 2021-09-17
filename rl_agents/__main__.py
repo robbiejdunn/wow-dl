@@ -1,22 +1,36 @@
 import argparse
+import gym
+from stable_baselines3 import DQN
 
-from rl_agents.train import TrainingManager
-
+from rl_agents.config import parse_config
 
 if __name__ == "__main__":
-    t = TrainingManager(
-        env_name='WoW', 
-        # env_name='CartPole-v0',
-        channels=1,
-        num_iterations=5000,
-        collect_steps_per_iteration=1,
-        learning_rate=1e-3,
-        replay_buffer_max_len=100000,
-        batch_size=64,
-        num_eval_episodes=3,
-        initial_collect_steps=100,
-        log_interval=100,
-        eval_interval=20,
-        episode_max_steps=1000,
+    parser = argparse.ArgumentParser(description="Training framework WoW RL agents")
+    parser.add_argument("-c", "--config", required=True, help="path of the experiment configuration file")
+    args = parser.parse_args()
+    config = parse_config(args.config)
+    env = gym.make(config["env"])
+    eval_env = gym.make(config["env"])
+    model = DQN(
+        policy=config["policy"],
+        env=env,
+        learning_rate=config["learning_rate"],
+        buffer_size=config["buffer_size"],
+        learning_starts=config["learning_starts"],
+        batch_size=config["batch_size"],
+        gamma=config["gamma"],
+        train_freq=config["train_freq"],
+        gradient_steps=config["gradient_steps"],
+        target_update_interval=config["target_update_interval"],
+        exploration_fraction=config["exploration_fraction"],
+        exploration_final_eps=config["exploration_final_eps"],
+        tensorboard_log="logs/dqn-cartpole",
+        policy_kwargs=dict(net_arch=[256, 256]),
+        verbose=1,
     )
-    t.train()
+    model.learn(
+        total_timesteps=config["n_timesteps"],
+        eval_env=eval_env,
+        eval_freq=10000,
+        eval_log_path="logs/dqn-cartpole"
+    )
