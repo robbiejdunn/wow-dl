@@ -6,6 +6,7 @@ setup(
     packages=['rl_agents'],
     install_requires=[
         'PyYAML>=5.4.1',
+        'scikit-image>=0.18.3',
         'stable-baselines3>=1.2.0',
         'tensorboard>=2.6.0',
     ],

@@ -29,8 +29,8 @@ docker run \
     -v "$1/Interface:/root/client/Interface" \
     -v "$1/realmlist.wtf:/root/client/realmlist.wtf" \
     -v "$1/Scan.dll:/root/client/Scan.dll" \
-    -v "$1/Scan.dll:/root/client/unicows.dll" \
+    -v "$1/unicows.dll:/root/client/unicows.dll" \
     -v "$2/docker-out:/root/output" \
     -v "$2/rl_agents:/root/rl_agents" \
-    --gpus all \
+    --gpus 1 \
     rl-agents-wow

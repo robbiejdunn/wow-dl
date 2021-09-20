@@ -1,16 +1,22 @@
 import argparse
 import gym
 from stable_baselines3 import DQN
+from stable_baselines3.common.env_checker import check_env
 
 from rl_agents.config import parse_config
+from rl_agents.envs.onyxianew import OnyxiaEnv
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Training framework WoW RL agents")
     parser.add_argument("-c", "--config", required=True, help="path of the experiment configuration file")
     args = parser.parse_args()
     config = parse_config(args.config)
-    env = gym.make(config["env"])
-    eval_env = gym.make(config["env"])
+    env = OnyxiaEnv()
+    eval_env = env
+    # check_env(env)
+
+    # env = gym.make(config["env"])
+    # eval_env = gym.make(config["env"])
     model = DQN(
         policy=config["policy"],
         env=env,
@@ -24,7 +30,7 @@ if __name__ == "__main__":
         target_update_interval=config["target_update_interval"],
         exploration_fraction=config["exploration_fraction"],
         exploration_final_eps=config["exploration_final_eps"],
-        tensorboard_log="logs/dqn-cartpole",
+        tensorboard_log="output/dqn-cartpole",
         policy_kwargs=dict(net_arch=[256, 256]),
         verbose=1,
     )
